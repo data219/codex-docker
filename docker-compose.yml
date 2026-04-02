@@ -6,6 +6,9 @@ services:
         CODEX_UNIVERSAL_IMAGE: ${CODEX_UNIVERSAL_IMAGE:-ghcr.io/openai/codex-universal:latest@sha256:956c2e7dd1590fc12763f172579d777464312006b9fa1f6405f5f1b78b8ea2dc}
         CODEX_VERSION: ${CODEX_VERSION:-0.118.0}
         OMX_VERSION: ${OMX_VERSION:-0.11.12}
+        GH_VERSION: ${GH_VERSION:-2.89.0}
+        GLAB_VERSION: ${GLAB_VERSION:-1.91.0}
+        ATLCLI_VERSION: ${ATLCLI_VERSION:-0.15.0}
         HOST_UID: ${HOST_UID:-1000}
         HOST_GID: ${HOST_GID:-1000}
     image: local/codex-cli-universal:${CODEX_VERSION:-0.118.0}
@@ -17,6 +20,16 @@ services:
       CODEX_SANDBOX_NETWORK_ACCESS: ${CODEX_SANDBOX_NETWORK_ACCESS:-true}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       CODEX_API_KEY: ${CODEX_API_KEY:-}
+      GH_TOKEN: ${GH_TOKEN:-}
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+      GLAB_TOKEN: ${GLAB_TOKEN:-}
+      GITLAB_TOKEN: ${GITLAB_TOKEN:-}
+      ATLCLI_API_TOKEN: ${ATLCLI_API_TOKEN:-}
+      ATLCLI_EMAIL: ${ATLCLI_EMAIL:-}
+      ATLCLI_SITE: ${ATLCLI_SITE:-}
+      ATLCLI_BASE_URL: ${ATLCLI_BASE_URL:-}
+      LINEAR_API_KEY: ${LINEAR_API_KEY:-}
+      LINEAR_TOKEN: ${LINEAR_TOKEN:-}
     volumes:
       - ./state/home:/home/codex
       - ./workspace:/workspace

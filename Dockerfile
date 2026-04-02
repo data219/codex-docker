@@ -7,12 +7,40 @@ ARG HOST_UID=1000
 ARG HOST_GID=1000
 ARG CODEX_VERSION=0.118.0
 ARG OMX_VERSION=0.11.12
+ARG GH_VERSION=2.89.0
+ARG GLAB_VERSION=1.91.0
+ARG ATLCLI_VERSION=0.15.0
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates curl tar gzip \
+    && rm -rf /var/lib/apt/lists/*
 
 RUN . /root/.nvm/nvm.sh \
     && npm install -g @openai/codex@${CODEX_VERSION} oh-my-codex@${OMX_VERSION} \
     && ln -sf "$(command -v node)" /usr/local/bin/node \
     && ln -sf "$(npm prefix -g)/bin/codex" /usr/local/bin/codex \
     && ln -sf "$(npm prefix -g)/bin/omx" /usr/local/bin/omx
+
+RUN set -eux; \
+    arch="$(dpkg --print-architecture)"; \
+    case "${arch}" in \
+      amd64) gh_arch="amd64"; glab_arch="amd64"; atlcli_arch="x64" ;; \
+      arm64) gh_arch="arm64"; glab_arch="arm64"; atlcli_arch="arm64" ;; \
+      *) echo "unsupported architecture: ${arch}" >&2; exit 1 ;; \
+    esac; \
+    install_archive() { \
+      binary="$1"; \
+      url="$2"; \
+      tmpdir="$(mktemp -d)"; \
+      mkdir -p "${tmpdir}/unpack"; \
+      curl -fsSL "${url}" -o "${tmpdir}/pkg.tgz"; \
+      tar -xzf "${tmpdir}/pkg.tgz" -C "${tmpdir}/unpack"; \
+      install -m 0755 "$(find "${tmpdir}/unpack" -type f -name "${binary}" | head -n 1)" "/usr/local/bin/${binary}"; \
+      rm -rf "${tmpdir}"; \
+    }; \
+    install_archive gh "https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_linux_${gh_arch}.tar.gz"; \
+    install_archive glab "https://gitlab.com/api/v4/projects/gitlab-org%2Fcli/packages/generic/glab/${GLAB_VERSION}/glab_${GLAB_VERSION}_linux_${glab_arch}.tar.gz"; \
+    install_archive atlcli "https://github.com/BjoernSchotte/atlcli/releases/download/v${ATLCLI_VERSION}/atlcli-linux-${atlcli_arch}.tar.gz"
 
 RUN set -eux; \
     chmod 755 /root; \
@@ -34,11 +62,12 @@ RUN set -eux; \
     else \
         useradd --create-home --non-unique --uid "${HOST_UID}" --gid "${HOST_GID}" --shell /bin/bash codex; \
     fi; \
-    mkdir -p /home/codex/.codex /home/codex/.agents/skills /home/codex/.agents/plugins /workspace /opt/codex-bootstrap; \
+    mkdir -p /home/codex/.codex /home/codex/.agents/skills /home/codex/.agents/plugins /home/codex/.config/gh /home/codex/.config/glab /workspace /opt/codex-bootstrap; \
     chown -R "${HOST_UID}:${HOST_GID}" /home/codex /workspace /opt/codex-bootstrap
 
 COPY --chown=codex:codex bootstrap/config.toml /opt/codex-bootstrap/config.toml
 COPY --chown=codex:codex bootstrap/AGENTS.md /opt/codex-bootstrap/AGENTS.md
+COPY --chown=codex:codex bootstrap/skills /opt/codex-bootstrap/skills
 COPY --chmod=755 docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 
 ENV HOME=/home/codex

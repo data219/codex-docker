@@ -16,12 +16,29 @@ tasks:
     cmds:
       - docker compose run --rm codex codex --version
 
+  platform-smoke:
+    desc: Verify the added platform CLIs, Linear MCP support, and vendored skills
+    cmds:
+      - docker compose run --rm codex gh --version
+      - docker compose run --rm codex glab --version
+      - docker compose run --rm codex atlcli --version
+      - docker compose run --rm codex codex mcp --help >/dev/null
+      - >
+        docker compose run --rm codex sh -c
+        'test -d "$HOME/.agents/skills/atlcli" &&
+        test -d "$HOME/.agents/skills/glab" &&
+        test -d "$HOME/.agents/skills/linear" &&
+        test -d "$HOME/.agents/skills/github" &&
+        test -d "$HOME/.agents/skills/using-symfony-superpowers" &&
+        test -d "$HOME/.agents/skills/symfony-messenger"'
+
   smoke:
     desc: Run a compact config, version, and toolchain smoke test
     cmds:
       - docker compose config >/dev/null
       - docker compose run --rm codex codex --version
       - docker compose run --rm codex omx --version
+      - task platform-smoke
       - >
         docker compose run --rm codex sh -c
         'command -v codex &&
@@ -29,7 +46,10 @@ tasks:
         command -v node &&
         command -v php &&
         command -v python3 &&
-        command -v git'
+        command -v git &&
+        command -v gh &&
+        command -v glab &&
+        command -v atlcli'
 
   omx-setup:
     desc: Run oh-my-codex interactive setup inside the container
@@ -40,6 +60,24 @@ tasks:
     desc: Run oh-my-codex diagnostics inside the container
     cmds:
       - docker compose run --rm codex omx doctor
+
+  mcp-list:
+    desc: List the configured Codex MCP servers
+    cmds:
+      - docker compose run --rm codex codex mcp list
+
+  linear-mcp-add:
+    desc: Add the official Linear MCP server config; starts OAuth on first run
+    cmds:
+      - >
+        docker compose run --rm codex sh -c
+        'codex mcp get linear >/dev/null 2>&1 ||
+        codex mcp add linear --url https://mcp.linear.app/mcp'
+
+  linear-mcp-login:
+    desc: Retry OAuth login for an existing Linear MCP server config
+    cmds:
+      - docker compose run --rm codex codex mcp login linear
 
   first-run:
     desc: Run the recommended first-run flow (smoke, OMX setup, doctor, Codex)
