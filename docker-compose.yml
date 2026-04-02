@@ -1,0 +1,29 @@
+services:
+  codex:
+    build:
+      context: .
+      args:
+        CODEX_UNIVERSAL_IMAGE: ${CODEX_UNIVERSAL_IMAGE:-ghcr.io/openai/codex-universal:latest@sha256:956c2e7dd1590fc12763f172579d777464312006b9fa1f6405f5f1b78b8ea2dc}
+        CODEX_VERSION: ${CODEX_VERSION:-0.118.0}
+        OMX_VERSION: ${OMX_VERSION:-0.11.12}
+        HOST_UID: ${HOST_UID:-1000}
+        HOST_GID: ${HOST_GID:-1000}
+    image: local/codex-cli-universal:${CODEX_VERSION:-0.118.0}
+    container_name: codex-cli-universal
+    working_dir: /workspace
+    environment:
+      HOME: /home/codex
+      CODEX_HOME: /home/codex/.codex
+      CODEX_SANDBOX_NETWORK_ACCESS: ${CODEX_SANDBOX_NETWORK_ACCESS:-true}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      CODEX_API_KEY: ${CODEX_API_KEY:-}
+    volumes:
+      - ./state/home:/home/codex
+      - ./workspace:/workspace
+    stdin_open: true
+    tty: true
+    init: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true

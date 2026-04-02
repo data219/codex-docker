@@ -1,0 +1,121 @@
+# codex-isolated-3
+
+Consolidated Docker setup for Codex CLI focused on three goals:
+
+- isolated state from the host
+- universal language/tool coverage via `codex-universal`
+- practical day-to-day UX with small wrapper scripts
+
+## What this stack isolates
+
+This setup does not mount:
+
+- host `~/.codex`
+- host `~/.agents`
+- host `~/.ssh`
+- host `~/.gitconfig`
+- host Docker socket
+
+The container gets its own persisted home under `./state/home` and its own project workspace under `./workspace`.
+
+## Why this stack exists
+
+`codex-isolated-1` had better UX but weaker hardening and limited tool coverage.
+`codex-isolated-2` had a stronger security posture and a universal base image but rougher day-to-day ergonomics.
+
+`codex-isolated-3` combines:
+
+- `codex-universal` base image
+- pinned `oh-my-codex` runtime helper
+- first-run bootstrap of `config.toml` and `AGENTS.md`
+- wrapper scripts for common Codex actions
+- non-root runtime user
+- compose hardening with `no-new-privileges` and dropped Linux capabilities
+- network enabled by default for effective Codex usage
+- direct access to the toolchains shipped by the pinned base image
+
+## Files
+
+- `Dockerfile`
+- `docker-compose.yml`
+- `.env.example`
+- `bootstrap/config.toml`
+- `bootstrap/AGENTS.md`
+- `docker/entrypoint.sh`
+- `bin/`
+- `state/home/`
+- `workspace/`
+
+## Quick start
+
+```bash
+cp .env.example .env
+docker compose build
+./bin/codex-login-chatgpt
+./bin/codex
+```
+
+API-key login:
+
+```bash
+./bin/codex-login-api
+```
+
+Taskfile usage:
+
+```bash
+task build
+task smoke
+task omx-setup
+task omx-doctor
+task login-chatgpt
+task codex
+task exec -- "review this repository and summarize risky areas"
+```
+
+If `task` is not installed on your host yet:
+
+```bash
+sudo snap install task --classic
+# or
+brew install go-task/tap/go-task
+```
+
+Open a shell inside the isolated container:
+
+```bash
+./bin/codex-shell
+```
+
+Run a one-off non-interactive prompt:
+
+```bash
+./bin/codex-exec "review this repository and summarize risky areas"
+```
+
+## Notes
+
+- `CODEX_SANDBOX_NETWORK_ACCESS=true` is the default because Codex is much less useful without network access.
+- If you want a stricter runtime, set `CODEX_SANDBOX_NETWORK_ACCESS=false` before first start or edit `state/home/.codex/config.toml` later.
+- The persisted home also stores isolated auth, config, and `.agents` assets.
+- `oh-my-codex` is preinstalled; run `task omx-setup` once if you want its workflow layer initialized in the persisted home.
+
+## First run with oh-my-codex
+
+Recommended first-run sequence:
+
+```bash
+task first-run
+```
+
+What this does:
+
+- `task smoke` confirms the container, Codex CLI, and toolchain paths are healthy.
+- `task omx-setup` runs the interactive OMX bootstrap and writes user-level OMX state into `./state/home`.
+- `task omx-doctor` validates the OMX installation and reports actionable diagnostics.
+- `task codex` starts your regular Codex workflow with OMX available.
+
+If setup was interrupted:
+
+- run `task omx-setup` again
+- then run `task omx-doctor`

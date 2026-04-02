@@ -1,0 +1,75 @@
+version: "3"
+
+tasks:
+  config:
+    desc: Render the Docker Compose configuration
+    cmds:
+      - docker compose config
+
+  build:
+    desc: Build the Codex image
+    cmds:
+      - docker compose build
+
+  version:
+    desc: Print the Codex CLI version inside the container
+    cmds:
+      - docker compose run --rm codex codex --version
+
+  smoke:
+    desc: Run a compact config, version, and toolchain smoke test
+    cmds:
+      - docker compose config >/dev/null
+      - docker compose run --rm codex codex --version
+      - docker compose run --rm codex omx --version
+      - >
+        docker compose run --rm codex sh -c
+        'command -v codex &&
+        command -v omx &&
+        command -v node &&
+        command -v php &&
+        command -v python3 &&
+        command -v git'
+
+  omx-setup:
+    desc: Run oh-my-codex interactive setup inside the container
+    cmds:
+      - docker compose run --rm codex omx setup
+
+  omx-doctor:
+    desc: Run oh-my-codex diagnostics inside the container
+    cmds:
+      - docker compose run --rm codex omx doctor
+
+  first-run:
+    desc: Run the recommended first-run flow (smoke, OMX setup, doctor, Codex)
+    cmds:
+      - task smoke
+      - task omx-setup
+      - task omx-doctor
+      - task codex
+
+  login-chatgpt:
+    desc: Start device-auth login for ChatGPT
+    cmds:
+      - ./bin/codex-login-chatgpt
+
+  login-api:
+    desc: Log in with OPENAI_API_KEY or CODEX_API_KEY
+    cmds:
+      - ./bin/codex-login-api
+
+  shell:
+    desc: Open a shell in the isolated container
+    cmds:
+      - ./bin/codex-shell
+
+  codex:
+    desc: Start Codex with optional extra CLI args after --
+    cmds:
+      - ./bin/codex {{.CLI_ARGS}}
+
+  exec:
+    desc: Run codex exec with extra CLI args after --
+    cmds:
+      - ./bin/codex-exec {{.CLI_ARGS}}

@@ -1,0 +1,10 @@
+# Local env and runtime state
+.env
+
+# Persisted container state (keep placeholder only)
+state/home/*
+!state/home/.gitkeep
+
+# Workspace content is user/project-specific
+workspace/*
+!workspace/.gitkeep

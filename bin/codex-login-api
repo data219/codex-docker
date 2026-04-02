@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd "$(dirname "$0")/.."
+if [[ -z "${OPENAI_API_KEY:-}" && -z "${CODEX_API_KEY:-}" ]]; then
+  echo "Set OPENAI_API_KEY or CODEX_API_KEY in your shell or in .env first." >&2
+  exit 1
+fi
+API_KEY="${CODEX_API_KEY:-${OPENAI_API_KEY:-}}"
+printf '%s' "$API_KEY" | docker compose run --rm -T codex codex login --with-api-key

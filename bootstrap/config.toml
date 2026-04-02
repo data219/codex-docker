@@ -1,0 +1,15 @@
+model = "gpt-5.4"
+personality = "pragmatic"
+
+approval_policy = "on-request"
+sandbox_mode = "workspace-write"
+cli_auth_credentials_store = "file"
+check_for_update_on_startup = true
+
+[sandbox_workspace_write]
+writable_roots = []
+network_access = __CODEX_SANDBOX_NETWORK_ACCESS__
+
+[shell_environment_policy]
+inherit = "core"
+include_only = ["PATH", "HOME", "TERM", "COLORTERM", "LANG", "LC_ALL", "OPENAI_API_KEY", "CODEX_API_KEY"]
