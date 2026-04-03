@@ -81,27 +81,33 @@ Headless OAuth note:
 
 ## Configuration
 
-### Build configuration (`docker compose build`)
-
-- `CODEX_UNIVERSAL_IMAGE`
-- `CODEX_VERSION`
-- `OMX_VERSION`
-- `GH_VERSION`
-- `GLAB_VERSION`
-- `ATLCLI_VERSION`
-
 ### Runtime configuration (`docker compose run`)
 
-- `HOST_UID`, `HOST_GID`
-- `CODEX_SANDBOX_NETWORK_ACCESS`
-- `FORCE_SKILL_SYNC`
-- `OPENAI_API_KEY`, `CODEX_API_KEY`
-- `GH_TOKEN`, `GITHUB_TOKEN`
-- `GLAB_TOKEN`, `GITLAB_TOKEN`
-- `ATLCLI_API_TOKEN`, `ATLCLI_EMAIL`, `ATLCLI_SITE`, `ATLCLI_BASE_URL`
+#### Core runtime variables
 
-`FORCE_SKILL_SYNC=false` keeps user-modified skills in `state/home/.agents/skills` intact across restarts.  
-Set `FORCE_SKILL_SYNC=true` to overwrite local skill copies from `bootstrap/skills` on startup.
+| Variable | Default | Optional | What it configures |
+|---|---|---|---|
+| `HOST_UID` | `1000` | Yes (recommended to set) | Container user ID mapping for file ownership in mounted `./workspace` and `./state/home`. Use `task init-env` to set host-specific values. |
+| `HOST_GID` | `1000` | Yes (recommended to set) | Container group ID mapping for writable host-mounted files. |
+| `CODEX_SANDBOX_NETWORK_ACCESS` | `true` | Yes | Enables/disables outbound network access for Codex runtime operations. Set to `false` for offline/local-only runs. |
+| `FORCE_SKILL_SYNC` | `false` | Yes | Controls skill sync behavior on startup. `false` preserves local edits in `state/home/.agents/skills`; `true` overwrites with `bootstrap/skills`. |
+
+#### Tool and authentication variables
+
+| Variable | Default | Optional | What it configures |
+|---|---|---|---|
+| `OPENAI_API_KEY` | empty | Yes | API-key auth for Codex CLI. Alternative to `codex login --device-auth`. |
+| `CODEX_API_KEY` | empty | Yes | Alternative API-key variable for Codex CLI auth. |
+| `GH_TOKEN` | empty | Yes | Token-based auth for `gh`. Not required if you use interactive `gh auth login`. |
+| `GITHUB_TOKEN` | empty | Yes | Alternate GitHub token variable used by `gh` and automation contexts. |
+| `GLAB_TOKEN` | empty | Yes | Token-based auth for `glab`. Not required if you use interactive `glab auth login`. |
+| `GITLAB_TOKEN` | empty | Yes | Alternate GitLab token variable for `glab` and scripts. |
+| `ATLCLI_API_TOKEN` | empty | Yes | Token auth for `atlcli` profile setup/non-interactive workflows. |
+| `ATLCLI_EMAIL` | empty | Yes | Default Atlassian account email for `atlcli` auth flows. |
+| `ATLCLI_SITE` | empty | Yes | Default Atlassian cloud site (for example `example.atlassian.net`) for `atlcli`. |
+| `ATLCLI_BASE_URL` | empty | Yes | Base URL override for self-hosted/data-center Atlassian endpoints in `atlcli`. |
+
+All tool auth env vars are optional. Interactive login flows remain supported for `codex`, `gh`, `glab`, and `atlcli`.
 
 ### Secrets handling
 
