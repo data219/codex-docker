@@ -1,6 +1,17 @@
 version: "3"
 
 tasks:
+  init-env:
+    desc: Generate .env with current host UID/GID defaults when missing
+    cmds:
+      - |
+        [ -f .env ] || cp .env.example .env
+      - |
+        sed -i.bak \
+          -e "s/^HOST_UID=.*/HOST_UID=$(id -u)/" \
+          -e "s/^HOST_GID=.*/HOST_GID=$(id -g)/" \
+          .env && rm -f .env.bak
+
   config:
     desc: Render the Docker Compose configuration
     cmds:
@@ -32,6 +43,17 @@ tasks:
         test -d "$HOME/.agents/skills/using-symfony-superpowers" &&
         test -d "$HOME/.agents/skills/symfony-messenger"'
 
+  skills-verify:
+    desc: Verify all vendored bootstrap skills exist in the isolated home
+    cmds:
+      - >
+        docker compose run --rm codex sh -c
+        'for d in /opt/codex-bootstrap/skills/*; do
+          [ -d "$d" ] || continue;
+          b=$(basename "$d");
+          test -d "$HOME/.agents/skills/$b";
+        done'
+
   smoke:
     desc: Run a compact config, version, and toolchain smoke test
     cmds:
@@ -39,6 +61,7 @@ tasks:
       - docker compose run --rm codex codex --version
       - docker compose run --rm codex omx --version
       - task platform-smoke
+      - task skills-verify
       - >
         docker compose run --rm codex sh -c
         'command -v codex &&
@@ -60,6 +83,13 @@ tasks:
     desc: Run oh-my-codex diagnostics inside the container
     cmds:
       - docker compose run --rm codex omx doctor
+
+  doctor:
+    desc: Extended runtime checks (smoke + MCP list + OMX doctor)
+    cmds:
+      - task smoke
+      - task mcp-list
+      - task omx-doctor
 
   mcp-list:
     desc: List the configured Codex MCP servers
