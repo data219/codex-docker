@@ -1,14 +1,26 @@
 # codex-isolated-3
 
-Consolidated Docker setup for Codex CLI focused on three goals:
+A consolidated Docker stack for Codex CLI that combines isolation, broad tool coverage, platform integrations, and the smoother day-to-day UX of the three variants.
 
-- isolated state from the host
-- universal language/tool coverage via `codex-universal`
-- practical day-to-day UX with small wrapper scripts
+`codex-isolated-3` is the recommended default. It keeps the same hardening baseline as `codex-isolated-2`, but is framed as the main working environment for daily Codex + OMX use.
 
-## What this stack isolates
+> [!TIP]
+> If you only want one stack to keep using, start here. `codex-isolated-3` is the practical default for regular Codex work, while `codex-isolated-2` remains the stricter sibling.
 
-This setup does not mount:
+## What this stack gives you
+
+- Isolated Codex home under `./state/home`
+- Pinned `codex-universal` base image by digest
+- Non-root runtime with host UID/GID mapping
+- Hardened Compose settings with `cap_drop: ALL` and `no-new-privileges`
+- Preinstalled `codex`, `omx`, `gh`, `glab`, and `atlcli`
+- Official Linear MCP workflow available inside the container
+- Vendored platform, Symfony, engineering, CI/CD, and security skills
+- Small wrapper scripts and task targets for fast daily use
+
+## Isolation model
+
+This stack does not mount:
 
 - host `~/.codex`
 - host `~/.agents`
@@ -16,70 +28,48 @@ This setup does not mount:
 - host `~/.gitconfig`
 - host Docker socket
 
-The container gets its own persisted home under `./state/home` and its own project workspace under `./workspace`.
+Everything relevant to the Codex runtime stays local to this stack:
 
-## Why this stack exists
+- auth and config
+- OMX setup state
+- MCP server config
+- vendored skills under the isolated `~/.agents/skills`
 
-`codex-isolated-1` had better UX but weaker hardening and limited tool coverage.
-`codex-isolated-2` had a stronger security posture and a universal base image but rougher day-to-day ergonomics.
+## Included tooling
 
-`codex-isolated-3` combines:
+The container includes:
 
-- `codex-universal` base image
-- pinned `oh-my-codex` runtime helper
-- pinned `gh`, `glab`, and `atlcli` platform CLIs
-- first-run bootstrap of `config.toml` and `AGENTS.md`
-- first-run bootstrap of the required platform skills and Symfony Superpowers skills
-- wrapper scripts for common Codex actions
-- non-root runtime user
-- compose hardening with `no-new-privileges` and dropped Linux capabilities
-- network enabled by default for effective Codex usage
-- direct access to the toolchains shipped by the pinned base image
-- Linear prepared through Codex MCP with `rmcp_client`
+- Codex CLI and `oh-my-codex`
+- Node.js, PHP, Python, and Git from the universal base image
+- GitHub CLI: `gh`
+- GitLab CLI: `glab`
+- Atlassian CLI: `atlcli`
+- Linear through the official MCP endpoint
 
-## Files
+The vendored skill bundle includes:
 
-- `Dockerfile`
-- `docker-compose.yml`
-- `.env.example`
-- `bootstrap/config.toml`
-- `bootstrap/AGENTS.md`
-- `docker/entrypoint.sh`
-- `bin/`
-- `state/home/`
-- `workspace/`
+- `github`, `glab`, `atlcli`, `linear`
+- Symfony, Doctrine, and testing skills
+- debugging, architecture, CI/CD, and security skills from your normal setup
 
 ## Quick start
 
 ```bash
 cp .env.example .env
-docker compose build
+task build
+task smoke
+task omx-setup
 ./bin/codex-login-chatgpt
-./bin/codex
+task codex
 ```
 
-API-key login:
+For API-key auth:
 
 ```bash
 ./bin/codex-login-api
 ```
 
-Taskfile usage:
-
-```bash
-task build
-task smoke
-task platform-smoke
-task omx-setup
-task omx-doctor
-task linear-mcp-add
-task linear-mcp-login
-task login-chatgpt
-task codex
-task exec -- "review this repository and summarize risky areas"
-```
-
-If `task` is not installed on your host yet:
+If `task` is not installed yet:
 
 ```bash
 sudo snap install task --classic
@@ -87,76 +77,80 @@ sudo snap install task --classic
 brew install go-task/tap/go-task
 ```
 
-Open a shell inside the isolated container:
+## Daily commands
 
 ```bash
-./bin/codex-shell
+task build
+task smoke
+task codex
+task exec -- "review this repository and summarize risky areas"
+task shell
 ```
 
-Run a one-off non-interactive prompt:
+Additional helper tasks:
 
 ```bash
-./bin/codex-exec "review this repository and summarize risky areas"
-```
-
-## Notes
-
-- `CODEX_SANDBOX_NETWORK_ACCESS=true` is the default because Codex is much less useful without network access.
-- If you want a stricter runtime, set `CODEX_SANDBOX_NETWORK_ACCESS=false` before first start or edit `state/home/.codex/config.toml` later.
-- The persisted home also stores isolated auth, config, and `.agents` assets.
-- `oh-my-codex` is preinstalled; run `task omx-setup` once if you want its workflow layer initialized in the persisted home.
-- `gh`, `glab`, and `atlcli` are preinstalled and pinned in the image.
-- `linear` is intentionally integrated through the official Linear MCP endpoint instead of an unofficial standalone CLI.
-- On every container start, the vendored `github`, `glab`, `atlcli`, `linear`, and Symfony skill directories are synced into the isolated `~/.agents/skills`.
-
-## Bundled skills
-
-This stack ships with:
-
-- platform skills: `github`, `glab`, `atlcli`, `linear`
-- all Symfony Superpowers skills from the normal `~/.agents/skills` set, including `using-symfony-superpowers`, `symfony-messenger`, `symfony-cache`, `symfony-voters`, Doctrine, testing, and architecture helpers
-
-The bundled skills live in the stack repository and are copied into the isolated home during container startup.
-
-## Platform integration
-
-Available CLIs inside the container:
-
-- `gh`
-- `glab`
-- `atlcli`
-- `codex` with Linear MCP support enabled
-
-Recommended Linear setup:
-
-```bash
+task platform-smoke
+task omx-doctor
+task mcp-list
 task linear-mcp-add
 task linear-mcp-login
-task mcp-list
 ```
 
-`linear-mcp-add` is idempotent. On the first run it both adds the server config and starts the Linear OAuth flow.
-If the server is already configured and you only need to retry auth, use `task linear-mcp-login`.
+## First run
 
-## First run with oh-my-codex
-
-Recommended first-run sequence:
+Use the standard bootstrap flow:
 
 ```bash
 task first-run
 ```
 
-What this does:
+That flow:
 
-- `task smoke` confirms the container, Codex CLI, and toolchain paths are healthy.
-- `task platform-smoke` is included in `task smoke` and validates `gh`, `glab`, `atlcli`, Linear MCP support, and the vendored skill payload.
-- `task omx-setup` runs the interactive OMX bootstrap and writes user-level OMX state into `./state/home`.
-- `task omx-doctor` validates the OMX installation and reports actionable diagnostics.
-- `task codex` starts your regular Codex workflow with OMX available.
+- validates the image and toolchain
+- checks the platform CLIs and vendored skill sync
+- initializes `oh-my-codex`
+- starts Codex in the prepared environment
 
-If setup was interrupted:
+When you want Linear available in the isolated setup:
 
-- run `task omx-setup` again
-- then run `task omx-doctor`
-- run `task linear-mcp-add` when you are ready to connect Linear for the first time
-- run `task linear-mcp-login` if the Linear MCP server already exists and you only need to retry OAuth
+```bash
+task linear-mcp-add
+task mcp-list
+```
+
+`linear-mcp-add` is idempotent. On the first run it adds the MCP server and starts the OAuth flow.
+
+## Configuration
+
+The default runtime favors usability:
+
+- `CODEX_SANDBOX_NETWORK_ACCESS=true`
+- persistent isolated home in `./state/home`
+- workspace mounted at `./workspace`
+
+If you want a stricter runtime, override the network setting in `.env`:
+
+```bash
+CODEX_SANDBOX_NETWORK_ACCESS=false
+```
+
+## Layout
+
+- `Dockerfile`: pinned runtime image and CLI installation
+- `docker-compose.yml`: hardened service definition
+- `Taskfile.yml`: build, smoke, OMX, and MCP workflows
+- `bootstrap/`: default Codex config, AGENTS, and vendored skills
+- `bin/`: wrappers for Codex entry points
+- `state/home/`: isolated persisted runtime state
+- `workspace/`: mounted working directory
+
+## Why keep `codex-isolated-2` as well
+
+`codex-isolated-3` is the default working stack.
+
+Keep `codex-isolated-2` if you want:
+
+- a stricter baseline as your mental model
+- a second maintained stack for comparison
+- a conservative fallback without changing your main daily environment
