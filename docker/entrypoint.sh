@@ -2,6 +2,7 @@
 set -euo pipefail
 
 : "${CODEX_SANDBOX_NETWORK_ACCESS:=true}"
+: "${FORCE_SKILL_SYNC:=false}"
 
 mkdir -p \
   "${CODEX_HOME}" \
@@ -38,8 +39,11 @@ if [ -d /opt/codex-bootstrap/skills ]; then
   for skill_dir in /opt/codex-bootstrap/skills/*; do
     [ -d "${skill_dir}" ] || continue
     skill_name="$(basename "${skill_dir}")"
-    rm -rf "${HOME}/.agents/skills/${skill_name}"
-    cp -a "${skill_dir}" "${HOME}/.agents/skills/${skill_name}"
+    target_dir="${HOME}/.agents/skills/${skill_name}"
+    if [ "${FORCE_SKILL_SYNC}" = "true" ] || [ ! -d "${target_dir}" ]; then
+      rm -rf "${target_dir}"
+      cp -a "${skill_dir}" "${target_dir}"
+    fi
   done
 fi
 

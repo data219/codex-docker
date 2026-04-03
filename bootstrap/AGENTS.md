@@ -1,4 +1,4 @@
-# Global instructions for codex-isolated-3
+# Global instructions for codex-docker
 
 - Treat this container as an isolated Codex environment.
 - Prefer concise, production-oriented changes.
